@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "JunubBTC",
+    "slug": "junubbtc",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0E14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.junubbtc.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "JunubBTC needs camera access to scan Lightning QR invoices and merchant codes."
+      }
+    },
+    "android": {
+      "package": "dev.junubbtc.app",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "JunubBTC needs camera access to scan Lightning QR invoices and merchant codes."
+        }
+      ]
+    ]
+  }
+}
