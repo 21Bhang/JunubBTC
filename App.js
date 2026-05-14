@@ -23,6 +23,7 @@ import SendMoneyScreen from "./src/screens/SendMoneyScreen";
 import PayBillScreen from "./src/screens/PayBillScreen";
 import BuyGoodsScreen from "./src/screens/BuyGoodsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
+import ErrorBoundary from "./src/components/ErrorBoundary";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -80,48 +81,50 @@ function Tabs() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="light" />
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: { backgroundColor: "#0B0E14" },
-          headerTintColor: "#F2A900",
-        }}
-      >
-        <Stack.Screen
-          name="Root"
-          component={Tabs}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="Send" component={SendScreen} />
-        <Stack.Screen name="Receive" component={ReceiveScreen} />
-        <Stack.Screen name="Scan" component={ScanScreen} />
-        <Stack.Screen
-          name="PayMerchant"
-          component={PayMerchantScreen}
-          options={{ title: "Pay Merchant" }}
-        />
-        <Stack.Screen
-          name="Processing"
-          component={ProcessingScreen}
-          options={{ title: "Processing", headerBackVisible: false }}
-        />
-        <Stack.Screen
-          name="SendMoney"
-          component={SendMoneyScreen}
-          options={{ title: "Send Money" }}
-        />
-        <Stack.Screen
-          name="PayBill"
-          component={PayBillScreen}
-          options={{ title: "Pay Bill" }}
-        />
-        <Stack.Screen
-          name="BuyGoods"
-          component={BuyGoodsScreen}
-          options={{ title: "Buy Goods" }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ErrorBoundary>
+      <NavigationContainer>
+        <StatusBar style="light" />
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { backgroundColor: "#0B0E14" },
+            headerTintColor: "#F2A900",
+          }}
+        >
+          <Stack.Screen
+            name="Root"
+            component={Tabs}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="Send" component={SendScreen} />
+          <Stack.Screen name="Receive" component={ReceiveScreen} />
+          <Stack.Screen name="Scan" component={ScanScreen} />
+          <Stack.Screen
+            name="PayMerchant"
+            component={PayMerchantScreen}
+            options={{ title: "Pay Merchant" }}
+          />
+          <Stack.Screen
+            name="Processing"
+            component={ProcessingScreen}
+            options={{ title: "Processing", headerBackVisible: false }}
+          />
+          <Stack.Screen
+            name="SendMoney"
+            component={SendMoneyScreen}
+            options={{ title: "Send Money" }}
+          />
+          <Stack.Screen
+            name="PayBill"
+            component={PayBillScreen}
+            options={{ title: "Pay Bill" }}
+          />
+          <Stack.Screen
+            name="BuyGoods"
+            component={BuyGoodsScreen}
+            options={{ title: "Buy Goods" }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }
