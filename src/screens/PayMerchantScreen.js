@@ -15,11 +15,9 @@ import { colors, radius, spacing } from "../theme";
 import PrimaryButton from "../components/PrimaryButton";
 import { sspToSats, formatSats, formatSsp } from "../lib/conversion";
 import {
-  calculateFeeSats,
   validateSatsForTransfer,
   maskPhone,
   maskIdentifier,
-  SATS_MAX,
 } from "../lib/fees";
 import { getSspPerBtc } from "../lib/rate";
 import { createPayout } from "../lib/bridge";
