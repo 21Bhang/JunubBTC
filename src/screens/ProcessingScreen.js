@@ -28,48 +28,72 @@ import { formatSats, formatSsp } from "../lib/conversion";
  * }
  */
 export default function ProcessingScreen({ route, navigation }) {
-  const { payout, summary, phone, billNo, sspAmount } = route.params || {};
+  const { payout, summary, sspAmount } = route.params || {};
   const [state, setState] = useState("waiting"); // waiting | paid | expired | failed
   const [payoutStatus, setPayoutStatus] = useState(null);
   const [settledMs, setSettledMs] = useState(null);
   const [error, setError] = useState(null);
   const createdAt = useRef(Date.now()).current;
-  const pollRef = useRef(null);
+  const timeoutRef = useRef(null);
   const mountedRef = useRef(true);
+  // Track the current terminal state via a ref so the long-lived polling
+  // closure can read fresh values without being recreated.
+  const stateRef = useRef("waiting");
+  // Guard against overlapping polls when the network is slow.
+  const inFlightRef = useRef(false);
+  const pollCountRef = useRef(0);
+
+  function isTerminal(s) {
+    return s === "paid" || s === "expired" || s === "failed";
+  }
 
   async function tick() {
+    if (inFlightRef.current) return;
+    if (isTerminal(stateRef.current)) return;
+    inFlightRef.current = true;
     try {
       const s = await getPayout(payout.id, { createdAt });
       if (!mountedRef.current) return;
-      if (s.status === "paid" && state !== "paid") {
+      if (s.status === "paid" && stateRef.current !== "paid") {
+        stateRef.current = "paid";
         setState("paid");
         setSettledMs(s.settledMs ?? Date.now() - createdAt);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else if (s.status === "expired") {
+      } else if (s.status === "expired" && stateRef.current !== "expired") {
+        stateRef.current = "expired";
         setState("expired");
-      } else if (s.status === "failed") {
+      } else if (s.status === "failed" && stateRef.current !== "failed") {
+        stateRef.current = "failed";
         setState("failed");
       }
       if (s.payoutStatus) setPayoutStatus(s.payoutStatus);
     } catch (e) {
       if (mountedRef.current) setError(e.message || String(e));
+    } finally {
+      inFlightRef.current = false;
     }
+  }
+
+  function schedulePoll() {
+    if (!mountedRef.current) return;
+    if (isTerminal(stateRef.current)) return;
+    // Aggressive polling for the first 30s (every 500ms) so settlement feels
+    // instant, then back off to 2s.
+    const delay = pollCountRef.current < 60 ? 500 : 2000;
+    timeoutRef.current = setTimeout(async () => {
+      pollCountRef.current += 1;
+      await tick();
+      schedulePoll();
+    }, delay);
   }
 
   useEffect(() => {
     mountedRef.current = true;
-    // Aggressive polling for the first 30s (every 500ms) so settlement feels instant,
-    // then back off to 2s.
-    let count = 0;
-    pollRef.current = setInterval(() => {
-      count += 1;
-      tick();
-      if (count === 60) {
-        clearInterval(pollRef.current);
-        pollRef.current = setInterval(tick, 2000);
-      }
-    }, 500);
-    tick();
+    // Kick off immediately, then begin the recursive scheduler.
+    (async () => {
+      await tick();
+      schedulePoll();
+    })();
 
     // When the user returns from their wallet app, force an immediate refresh.
     const sub = AppState.addEventListener("change", (s) => {
@@ -78,7 +102,7 @@ export default function ProcessingScreen({ route, navigation }) {
 
     return () => {
       mountedRef.current = false;
-      if (pollRef.current) clearInterval(pollRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       sub.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,13 +132,17 @@ export default function ProcessingScreen({ route, navigation }) {
                 ))
               ) : (
                 <>
-                  <Row label="To" value={phone} />
-                  <Row label="Bill" value={billNo} />
+                  <Row label="Sender ref" value={payout.senderToken} />
+                  <Row label="Recipient ref" value={payout.recipientToken} />
                   <Row
                     label="Amount"
                     value={`SSP ${formatSsp(sspAmount)} · ${formatSats(
-                      payout.sats,
+                      payout.recipientSats ?? payout.sats,
                     )} sats`}
+                  />
+                  <Row
+                    label="JunubBTC fee"
+                    value={`${formatSats(payout.feeSats || 0)} sats`}
                   />
                 </>
               )}
@@ -167,10 +195,17 @@ export default function ProcessingScreen({ route, navigation }) {
                 ))
               ) : (
                 <>
-                  <Row label="To" value={phone} />
-                  <Row label="Bill" value={billNo} />
+                  <Row label="Sender ref" value={payout.senderToken} />
+                  <Row label="Recipient ref" value={payout.recipientToken} />
                   <Row label="Amount" value={`SSP ${formatSsp(sspAmount)}`} />
-                  <Row label="Sats" value={formatSats(payout.sats)} />
+                  <Row
+                    label="You pay"
+                    value={`${formatSats(payout.sats)} sats`}
+                  />
+                  <Row
+                    label="JunubBTC fee"
+                    value={`${formatSats(payout.feeSats || 0)} sats`}
+                  />
                 </>
               )}
             </View>

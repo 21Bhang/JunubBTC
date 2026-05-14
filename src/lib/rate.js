@@ -10,7 +10,8 @@
  * Override URLs / rates with:
  *   EXPO_PUBLIC_BTC_USD_URL   (must return JSON { bitcoin: { usd: <num> } } shape
  *                              or { price: <num> })
- *   EXPO_PUBLIC_SSP_PER_USD   (number, default 6500 — adjust to the live street rate)
+ *   EXPO_PUBLIC_SSP_PER_USD   (number, default 5200 — 1 USD ≈ 5,200 SSP on the
+ *                              South Sudan parallel market — adjust as needed)
  *   EXPO_PUBLIC_SSP_PER_BTC   (number, if set this OVERRIDES the live calculation)
  */
 
@@ -18,9 +19,9 @@ const BTC_USD_URL =
   process.env.EXPO_PUBLIC_BTC_USD_URL ||
   "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd";
 
-const USD_PER_SSP = Number(process.env.EXPO_PUBLIC_USD_PER_SSP || 4500);
-const BTC_PER_SSP_OVERRIDE = process.env.EXPO_PUBLIC_BTC_PER_SSP
-  ? Number(process.env.EXPO_PUBLIC_BTC_PER_SSP)
+const SSP_PER_USD = Number(process.env.EXPO_PUBLIC_SSP_PER_USD || 5200);
+const SSP_PER_BTC_OVERRIDE = process.env.EXPO_PUBLIC_SSP_PER_BTC
+  ? Number(process.env.EXPO_PUBLIC_SSP_PER_BTC)
   : null;
 
 let cache = { rate: null, ts: 0 };
@@ -40,9 +41,9 @@ function parseBtcUsd(json) {
  * @returns {Promise<{ sspPerBtc:number, btcUsd:number|null, source:string, fetchedAt:number }>}
  */
 export async function getSspPerBtc({ force = false } = {}) {
-  if (BTC_PER_SSP_OVERRIDE) {
+  if (SSP_PER_BTC_OVERRIDE) {
     return {
-      sspPerBtc: BTC_PER_SSP_OVERRIDE,
+      sspPerBtc: SSP_PER_BTC_OVERRIDE,
       btcUsd: null,
       source: "env-override",
       fetchedAt: Date.now(),
@@ -60,7 +61,7 @@ export async function getSspPerBtc({ force = false } = {}) {
     const btcUsd = parseBtcUsd(json);
     if (!btcUsd) throw new Error("Could not parse BTC/USD price");
     const rate = {
-      sspPerBtc: btcUsd * USD_PER_SSP,
+      sspPerBtc: btcUsd * SSP_PER_USD,
       btcUsd,
       source: BTC_USD_URL,
       fetchedAt: Date.now(),
@@ -70,7 +71,7 @@ export async function getSspPerBtc({ force = false } = {}) {
   } catch (e) {
     // Fall back to a conservative hard-coded number so the UI never blocks.
     const fallback = {
-      sspPerBtc: 65_000 * USD_PER_SSP, // assume ~$65k BTC if offline
+      sspPerBtc: 65_000 * SSP_PER_USD, // assume ~$65k BTC if offline
       btcUsd: null,
       source: "offline-fallback",
       fetchedAt: Date.now(),

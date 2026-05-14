@@ -21,6 +21,11 @@ import {
   SSP_MIN,
   SSP_MAX,
 } from "../lib/conversion";
+import {
+  calculateFeeSats,
+  validateSatsForTransfer,
+  SATS_MAX,
+} from "../lib/fees";
 import { getSspPerBtc } from "../lib/rate";
 import { createPayout } from "../lib/bridge";
 import { openInExternalWallet } from "../lib/walletLink";
@@ -92,6 +97,8 @@ export default function BtcPaymentForm({
     if (!rate) return 0;
     return sspToSats(sspAmount, rate.sspPerBtc);
   }, [sspAmount, rate]);
+  const feeSats = useMemo(() => calculateFeeSats(sats), [sats]);
+  const totalSats = sats + feeSats;
 
   function validate() {
     for (const f of fields) {
@@ -119,6 +126,11 @@ export default function BtcPaymentForm({
       Alert.alert("Rate", "Live rate not loaded yet. Try again.");
       return false;
     }
+    const satsCheck = validateSatsForTransfer(sats);
+    if (!satsCheck.ok) {
+      Alert.alert("Transfer limit", satsCheck.error);
+      return false;
+    }
     return true;
   }
 
@@ -140,9 +152,28 @@ export default function BtcPaymentForm({
         return;
       }
       Haptics.selectionAsync();
+      // Build an anonymised receipt. Each side sees only opaque tokens,
+      // never the other party's phone, account, or name.
+      const baseSummary = summaryLines
+        ? summaryLines(values, payout.recipientSats ?? payout.sats, rate)
+        : [];
+      const summary = [
+        { label: "Sender ref", value: payout.senderToken },
+        { label: "Recipient ref", value: payout.recipientToken },
+        ...baseSummary,
+        { label: "You pay", value: `${formatSats(payout.sats)} sats` },
+        {
+          label: "JunubBTC fee",
+          value: `${formatSats(payout.feeSats)} sats`,
+        },
+        {
+          label: "Recipient gets",
+          value: `${formatSats(payout.recipientSats)} sats`,
+        },
+      ];
       navigation.navigate("Processing", {
         payout,
-        summary: summaryLines ? summaryLines(values, payout.sats, rate) : null,
+        summary,
         sspAmount: Number(sspAmount || 0),
       });
     } catch (e) {
@@ -214,15 +245,25 @@ export default function BtcPaymentForm({
           </View>
         ))}
 
-        {sspAmount && rate ? (
-          <Text style={styles.hint}>
-            ≈ {formatSats(sats)} sats at SSP {formatSsp(rate.sspPerBtc)} / BTC
-          </Text>
+        {sspAmount && rate && sats ? (
+          <View style={styles.feeBox}>
+            <Text style={styles.hint}>
+              ≈ {formatSats(sats)} sats at SSP {formatSsp(rate.sspPerBtc)} / BTC
+            </Text>
+            <Text style={styles.hint}>
+              JunubBTC fee: {formatSats(feeSats)} sats
+            </Text>
+            <Text
+              style={[styles.hint, { fontWeight: "700", color: colors.text }]}
+            >
+              Total to pay: {formatSats(totalSats)} sats
+            </Text>
+          </View>
         ) : null}
 
         <Text style={styles.limitHint}>
-          Min SSP {SSP_MIN} · Max SSP {SSP_MAX.toLocaleString("en-US")} per
-          transaction
+          Min SSP {SSP_MIN} · Max SSP {SSP_MAX.toLocaleString("en-US")} · max{" "}
+          {SATS_MAX.toLocaleString("en-US")} sats per transaction
         </Text>
 
         <View style={{ height: spacing.lg }} />
@@ -309,6 +350,12 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   hint: { color: colors.muted, marginTop: spacing.sm, fontSize: 12 },
+  feeBox: {
+    marginTop: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.sm || 8,
+    backgroundColor: colors.surfaceAlt,
+  },
   limitHint: {
     color: colors.muted,
     marginTop: spacing.xs || 6,

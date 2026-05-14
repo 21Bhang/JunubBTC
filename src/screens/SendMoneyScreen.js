@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowUpRight } from "lucide-react-native";
 import BtcPaymentForm from "../components/BtcPaymentForm";
+import { maskPhone } from "../lib/fees";
 
 const PHONE_RE = /^\+?[0-9][0-9\s-]{6,}$/;
 
@@ -36,10 +37,9 @@ export default function SendMoneyScreen({ navigation }) {
         phone: v.phone.trim(),
         sspAmount: Number(v.sspAmount),
       })}
-      summaryLines={(v, sats) => [
-        { label: "Send to", value: v.phone },
+      summaryLines={(v) => [
+        { label: "Send to (masked)", value: maskPhone(v.phone) },
         { label: "Amount", value: `SSP ${v.sspAmount}` },
-        { label: "Sats", value: String(sats) },
       ]}
     />
   );

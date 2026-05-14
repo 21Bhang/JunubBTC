@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { ScanLine, ShieldAlert } from "lucide-react-native";
 import { colors, spacing } from "../theme";
@@ -34,6 +35,16 @@ export default function ScanScreen({ navigation, route }) {
       requestPermission();
     }
   }, [permission, requestPermission]);
+
+  // Reset the "already handled" guard whenever the screen regains focus.
+  // In a stack navigator the Scan screen stays mounted after navigating to
+  // PayMerchant / Send, so without this reset returning to Scan would leave
+  // scanning permanently disabled.
+  useFocusEffect(
+    useCallback(() => {
+      handledRef.current = false;
+    }, []),
+  );
 
   function onScanned({ data }) {
     if (handledRef.current || !data) return;

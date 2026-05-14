@@ -4,6 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2 } from "lucide-react-native";
 import { colors, radius, spacing } from "../theme";
 import { listPayments } from "../lib/lnbits";
+import { isCompletedPayment } from "../lib/payments";
+import { makeAnonToken } from "../lib/fees";
 import { formatSats, formatTxDate } from "../lib/conversion";
 
 /**
@@ -38,7 +40,7 @@ export default function HistoryScreen() {
 
   const visible = useMemo(() => {
     return items
-      .filter(isCompleted)
+      .filter(isCompletedPayment)
       .slice()
       .sort((a, b) => (b.time || 0) - (a.time || 0));
   }, [items]);
@@ -71,29 +73,13 @@ export default function HistoryScreen() {
   );
 }
 
-/**
- * A transaction counts as "completed" only if it actually settled on the
- * Lightning network. Pending, cancelled, expired, or failed invoices are
- * excluded.
- */
-function isCompleted(t) {
-  if (!t) return false;
-  if (t.pending === true) return false;
-  if (t.paid === false) return false;
-  if (t.status === "failed" || t.status === "expired") return false;
-  // LNbits marks settled invoices with paid=true OR status="success".
-  // Some shapes omit both flags but include a preimage; treat those as paid.
-  if (t.paid === true) return true;
-  if (t.status === "success") return true;
-  if (t.preimage && t.preimage !== "0".repeat(64)) return true;
-  return false;
-}
-
 function Row({ item }) {
   const incoming = (item.amount || 0) > 0;
   const sats = Math.round((item.amount || 0) / 1000);
   const tsLabel = formatTxDate(item.time);
   const DirIcon = incoming ? ArrowDownLeft : ArrowUpRight;
+  // Show only an opaque token — never a memo / phone / counterparty name.
+  const token = makeAnonToken(item.payment_hash || item.checking_id);
 
   return (
     <View style={styles.row}>
@@ -106,7 +92,7 @@ function Row({ item }) {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.memo} numberOfLines={1}>
-          {item.memo || (incoming ? "Received" : "Sent")}
+          {incoming ? "Received" : "Sent"} · {token}
         </Text>
         <View style={styles.metaRow}>
           <CheckCircle2 size={14} color={colors.success} />
@@ -115,11 +101,6 @@ function Row({ item }) {
           </Text>
           {tsLabel ? <Text style={styles.metaText}> · {tsLabel}</Text> : null}
         </View>
-        {item.payment_hash ? (
-          <Text style={styles.hash} numberOfLines={1}>
-            {item.payment_hash}
-          </Text>
-        ) : null}
       </View>
       <Text
         style={[
