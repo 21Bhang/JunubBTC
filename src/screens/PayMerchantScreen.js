@@ -14,6 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radius, spacing } from "../theme";
 import PrimaryButton from "../components/PrimaryButton";
 import { sspToSats, formatSats, formatSsp } from "../lib/conversion";
+import {
+  validateSatsForTransfer,
+  maskPhone,
+  maskIdentifier,
+} from "../lib/fees";
 import { getSspPerBtc } from "../lib/rate";
 import { createPayout } from "../lib/bridge";
 import { parseMerchantCode } from "../lib/merchantUri";
@@ -92,6 +97,11 @@ export default function PayMerchantScreen({ route, navigation }) {
       Alert.alert("Rate", "Live rate not loaded yet. Try again.");
       return false;
     }
+    const satsCheck = validateSatsForTransfer(sats);
+    if (!satsCheck.ok) {
+      Alert.alert("Transfer limit", satsCheck.error);
+      return false;
+    }
     return true;
   }
 
@@ -118,10 +128,25 @@ export default function PayMerchantScreen({ route, navigation }) {
         return;
       }
       Haptics.selectionAsync();
+      const summary = [
+        { label: "Sender ref", value: payout.senderToken },
+        { label: "Recipient ref", value: payout.recipientToken },
+        { label: "Send to (masked)", value: maskPhone(phone) },
+        { label: "Bill (masked)", value: maskIdentifier(billNo) },
+        { label: "Amount", value: `SSP ${sspAmount}` },
+        { label: "You pay", value: `${formatSats(payout.sats)} sats` },
+        {
+          label: "JunubBTC fee",
+          value: `${formatSats(payout.feeSats)} sats`,
+        },
+        {
+          label: "Recipient gets",
+          value: `${formatSats(payout.recipientSats)} sats`,
+        },
+      ];
       navigation.navigate("Processing", {
         payout,
-        phone: phone.trim(),
-        billNo: billNo.trim(),
+        summary,
         sspAmount: Number(sspAmount),
       });
     } catch (e) {

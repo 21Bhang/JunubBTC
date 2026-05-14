@@ -1,6 +1,7 @@
 import React from "react";
 import { Receipt } from "lucide-react-native";
 import BtcPaymentForm from "../components/BtcPaymentForm";
+import { maskIdentifier } from "../lib/fees";
 
 export default function PayBillScreen({ navigation }) {
   return (
@@ -41,11 +42,10 @@ export default function PayBillScreen({ navigation }) {
         account: v.account.trim(),
         sspAmount: Number(v.sspAmount),
       })}
-      summaryLines={(v, sats) => [
-        { label: "Paybill", value: v.paybill },
-        { label: "Account", value: v.account },
+      summaryLines={(v) => [
+        { label: "Paybill (masked)", value: maskIdentifier(v.paybill) },
+        { label: "Account (masked)", value: maskIdentifier(v.account) },
         { label: "Amount", value: `SSP ${v.sspAmount}` },
-        { label: "Sats", value: String(sats) },
       ]}
     />
   );

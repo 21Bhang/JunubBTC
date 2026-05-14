@@ -1,4 +1,4 @@
-import { Linking, Platform } from "react-native";
+import { Linking } from "react-native";
 
 /**
  * Try to hand off a BOLT11 invoice to ANY Lightning wallet installed on the
@@ -8,19 +8,17 @@ import { Linking, Platform } from "react-native";
  * (or open the default wallet) — exactly the "detect any lightning wallet on
  * my phone" behaviour requested.
  *
- * Returns true if the OS reported it could open the URL.
+ * Implementation note: `Linking.canOpenURL` is unreliable for custom schemes.
+ * On iOS it returns false unless the scheme is listed in
+ * LSApplicationQueriesSchemes, and on some Android devices it returns false
+ * for custom schemes even when a handler is installed. We therefore skip the
+ * pre-check and just try to open the URL; failures fall through to the catch.
+ *
+ * Returns true if the URL was successfully opened.
  */
 export async function openInExternalWallet(bolt11) {
   const url = `lightning:${String(bolt11).trim()}`;
   try {
-    const supported = await Linking.canOpenURL(url);
-    if (!supported && Platform.OS === "android") {
-      // Android sometimes returns false for canOpenURL on custom schemes;
-      // try anyway.
-      await Linking.openURL(url);
-      return true;
-    }
-    if (!supported) return false;
     await Linking.openURL(url);
     return true;
   } catch {

@@ -18,9 +18,12 @@ import {
 import { colors, radius, spacing } from "../theme";
 import PrimaryButton from "../components/PrimaryButton";
 import { getWallet, listPayments } from "../lib/lnbits";
+import { isCompletedPayment } from "../lib/payments";
+import { makeAnonToken } from "../lib/fees";
 import { formatSats, formatSsp, satsToSsp } from "../lib/conversion";
 
-const BTC_PER_SSP = Number(process.env.EXPO_PUBLIC_BTC_PER_SSP || 400_000_000);
+// SSP per 1 BTC (i.e. how many South Sudanese Pounds 1 BTC is worth).
+const SSP_PER_BTC = Number(process.env.EXPO_PUBLIC_SSP_PER_BTC || 400_000_000);
 
 export default function HomeScreen({ navigation }) {
   const [showSsp, setShowSsp] = useState(false);
@@ -50,7 +53,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const sspValue = useMemo(
-    () => satsToSsp(balanceSats, BTC_PER_SSP),
+    () => satsToSsp(balanceSats, SSP_PER_BTC),
     [balanceSats],
   );
 
@@ -142,16 +145,7 @@ export default function HomeScreen({ navigation }) {
           // Only show real, completed transactions. Pending, cancelled,
           // expired, or failed invoices are filtered out entirely so the
           // user never sees a payment that didn't actually go through.
-          const settled = (txs || []).filter((t) => {
-            if (!t) return false;
-            if (t.pending === true) return false;
-            if (t.paid === false) return false;
-            if (t.status === "failed" || t.status === "expired") return false;
-            if (t.paid === true) return true;
-            if (t.status === "success") return true;
-            if (t.preimage && t.preimage !== "0".repeat(64)) return true;
-            return false;
-          });
+          const settled = (txs || []).filter(isCompletedPayment);
           if (settled.length === 0) {
             return (
               <Text style={styles.muted}>No completed transactions yet.</Text>
@@ -159,6 +153,7 @@ export default function HomeScreen({ navigation }) {
           }
           return settled.slice(0, 5).map((t) => {
             const incoming = (t.amount || 0) > 0;
+            const token = makeAnonToken(t.payment_hash || t.checking_id);
             return (
               <View key={t.payment_hash || t.checking_id} style={styles.txRow}>
                 <View style={styles.txIconWrap}>
@@ -166,7 +161,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.txMemo} numberOfLines={1}>
-                    {t.memo || (incoming ? "Received" : "Sent")}
+                    {incoming ? "Received" : "Sent"} · {token}
                   </Text>
                   <Text style={[styles.muted, { color: colors.success }]}>
                     Success

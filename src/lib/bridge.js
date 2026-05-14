@@ -22,6 +22,11 @@
 import { createInvoice, getPayment } from "./lnbits";
 import { sspToSats, validateSspAmount } from "./conversion";
 import { getSspPerBtc } from "./rate";
+import {
+  calculateFeeSats,
+  makeAnonToken,
+  validateSatsForTransfer,
+} from "./fees";
 
 const BRIDGE_URL = process.env.EXPO_PUBLIC_BRIDGE_URL || "";
 const BRIDGE_KEY = process.env.EXPO_PUBLIC_BRIDGE_KEY || "";
@@ -63,40 +68,66 @@ export async function createPayout(params) {
   const check = validateSspAmount(sspAmount);
   if (!check.ok) throw new Error(check.error);
   if (BRIDGE_URL) {
-    return bridge("/v1/payouts", {
+    const res = await bridge("/v1/payouts", {
       method: "POST",
       body: { ...params, sspAmount: check.value },
     });
+    // If the backend hasn't been upgraded yet to return fee/token fields,
+    // compute them client-side so the UI stays consistent.
+    const recipientSats = Number(res.recipientSats ?? res.sats ?? 0);
+    const feeSats = Number(res.feeSats ?? calculateFeeSats(recipientSats));
+    const totalSats = Number(res.totalSats ?? recipientSats + feeSats);
+    return {
+      ...res,
+      recipientSats,
+      feeSats,
+      totalSats,
+      sats: totalSats,
+      senderToken: res.senderToken || makeAnonToken(`${res.id}:s`),
+      recipientToken: res.recipientToken || makeAnonToken(`${res.id}:r`),
+    };
   }
   // ---- Local demo mode (no backend) ----
   const { sspPerBtc } = await getSspPerBtc();
-  const sats = sspToSats(sspAmount, sspPerBtc);
-  if (!sats || sats <= 0) throw new Error("Amount is zero at current rate");
-  const memo = memoFor(params);
-  const inv = await createInvoice({ amountSats: sats, memo });
+  const recipientSats = sspToSats(sspAmount, sspPerBtc);
+  const satsCheck = validateSatsForTransfer(recipientSats);
+  if (!satsCheck.ok) throw new Error(satsCheck.error);
+  const feeSats = calculateFeeSats(recipientSats);
+  const totalSats = recipientSats + feeSats;
+  const memo = memoFor(params, totalSats);
+  const inv = await createInvoice({ amountSats: totalSats, memo });
   return {
     id: inv.payment_hash,
-    sats,
+    sats: totalSats,
+    recipientSats,
+    feeSats,
+    totalSats,
     invoice: inv.payment_request,
     sspPerBtc,
+    senderToken: makeAnonToken(`${inv.payment_hash}:s`),
+    recipientToken: makeAnonToken(`${inv.payment_hash}:r`),
     expiresAt: Date.now() + 10 * 60 * 1000,
     type,
     demo: true,
   };
 }
 
-function memoFor(p) {
-  const ssp = Number(p.sspAmount || 0).toFixed(2);
+function memoFor(p, totalSats) {
+  // Memos are visible to the Lightning network — keep them free of PII.
+  // We log only the anonymous reference number so JunubBTC's bridge can
+  // reconcile the payout without leaking the sender's or recipient's
+  // identity.
+  const total = totalSats != null ? ` (${totalSats} sats)` : "";
   switch (p.type) {
     case "send":
-      return `JunubBTC SEND ${ssp} SSP -> ${p.phone}`;
+      return `JunubBTC SEND${total}`;
     case "paybill":
-      return `JunubBTC PAYBILL ${p.paybill} acct ${p.account} ${ssp} SSP`;
+      return `JunubBTC PAYBILL${total}`;
     case "buygoods":
-      return `JunubBTC BUYGOODS till ${p.till} ${ssp} SSP`;
+      return `JunubBTC BUYGOODS${total}`;
     case "merchant":
     default:
-      return `JunubBTC bill ${p.billNo || "-"} -> ${p.phone || "-"} (${ssp} SSP)`;
+      return `JunubBTC MERCHANT${total}`;
   }
 }
 

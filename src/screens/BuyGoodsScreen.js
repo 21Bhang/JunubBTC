@@ -1,6 +1,7 @@
 import React from "react";
 import { Store } from "lucide-react-native";
 import BtcPaymentForm from "../components/BtcPaymentForm";
+import { maskIdentifier } from "../lib/fees";
 
 export default function BuyGoodsScreen({ navigation }) {
   return (
@@ -34,10 +35,9 @@ export default function BuyGoodsScreen({ navigation }) {
         till: v.till.trim(),
         sspAmount: Number(v.sspAmount),
       })}
-      summaryLines={(v, sats) => [
-        { label: "Till", value: v.till },
+      summaryLines={(v) => [
+        { label: "Till (masked)", value: maskIdentifier(v.till) },
         { label: "Amount", value: `SSP ${v.sspAmount}` },
-        { label: "Sats", value: String(sats) },
       ]}
     />
   );

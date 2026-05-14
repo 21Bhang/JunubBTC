@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radius, spacing } from "../theme";
 import { listPayments } from "../lib/lnbits";
+import { isCompletedPayment } from "../lib/payments";
+import { makeAnonToken } from "../lib/fees";
 import { formatSats, formatTxDate } from "../lib/conversion";
 
 export default function WalletScreen() {
@@ -16,16 +18,7 @@ export default function WalletScreen() {
   }, []);
 
   // Only completed payments. Pending / cancelled / expired / failed are hidden.
-  const completed = txs.filter((t) => {
-    if (!t) return false;
-    if (t.pending === true) return false;
-    if (t.paid === false) return false;
-    if (t.status === "failed" || t.status === "expired") return false;
-    if (t.paid === true) return true;
-    if (t.status === "success") return true;
-    if (t.preimage && t.preimage !== "0".repeat(64)) return true;
-    return false;
-  });
+  const completed = txs.filter(isCompletedPayment);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -39,7 +32,8 @@ export default function WalletScreen() {
             <View key={t.payment_hash || t.checking_id} style={styles.row}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.memo} numberOfLines={1}>
-                  {t.memo || (t.amount > 0 ? "Received" : "Sent")}
+                  {t.amount > 0 ? "Received" : "Sent"} ·{" "}
+                  {makeAnonToken(t.payment_hash || t.checking_id)}
                 </Text>
                 <Text style={styles.muted}>
                   Success

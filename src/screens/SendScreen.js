@@ -14,7 +14,8 @@ import PrimaryButton from "../components/PrimaryButton";
 import { payInvoice } from "../lib/lnbits";
 import { sspToSats } from "../lib/conversion";
 
-const BTC_PER_SSP = Number(process.env.EXPO_PUBLIC_BTC_PER_SSP || 400_000_000);
+// SSP per 1 BTC (i.e. how many South Sudanese Pounds 1 BTC is worth).
+const SSP_PER_BTC = Number(process.env.EXPO_PUBLIC_SSP_PER_BTC || 400_000_000);
 
 export default function SendScreen({ route, navigation }) {
   const [invoice, setInvoice] = useState(route?.params?.invoice || "");
@@ -22,7 +23,7 @@ export default function SendScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
 
   const estimatedSats = useMemo(
-    () => sspToSats(sspAmount, BTC_PER_SSP),
+    () => sspToSats(sspAmount, SSP_PER_BTC),
     [sspAmount],
   );
 
