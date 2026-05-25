@@ -140,10 +140,6 @@ export default function ProcessingScreen({ route, navigation }) {
                       payout.recipientSats ?? payout.sats,
                     )} sats`}
                   />
-                  <Row
-                    label="JunubBTC fee"
-                    value={`${formatSats(payout.feeSats || 0)} sats`}
-                  />
                 </>
               )}
               <Row
@@ -198,14 +194,6 @@ export default function ProcessingScreen({ route, navigation }) {
                   <Row label="Sender ref" value={payout.senderToken} />
                   <Row label="Recipient ref" value={payout.recipientToken} />
                   <Row label="Amount" value={`SSP ${formatSsp(sspAmount)}`} />
-                  <Row
-                    label="You pay"
-                    value={`${formatSats(payout.sats)} sats`}
-                  />
-                  <Row
-                    label="JunubBTC fee"
-                    value={`${formatSats(payout.feeSats || 0)} sats`}
-                  />
                 </>
               )}
             </View>

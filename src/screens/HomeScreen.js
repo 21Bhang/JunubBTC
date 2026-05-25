@@ -120,21 +120,6 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        <View style={styles.row}>
-          <PrimaryButton
-            title="Receive"
-            variant="surface"
-            style={styles.action}
-            onPress={() => navigation.navigate("Receive")}
-          />
-          <PrimaryButton
-            title="Send (invoice)"
-            variant="ghost"
-            style={styles.action}
-            onPress={() => navigation.navigate("Send")}
-          />
-        </View>
-
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Recent Activity</Text>
           <Pressable onPress={() => navigation.navigate("History")}>

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, radius, spacing } from "../theme";
-import { FEE_TIERS, SATS_MAX, SATS_MIN } from "../lib/fees";
-import { formatSsp, formatSats } from "../lib/conversion";
+import { formatSsp } from "../lib/conversion";
 import { getSspPerBtc } from "../lib/rate";
 
 const SSP_PER_BTC_OVERRIDE =
@@ -59,35 +58,6 @@ export default function SettingsScreen() {
           }
         />
         <Row label="Source" value={rate?.source || "—"} />
-        <Pressable
-          style={styles.refreshBtn}
-          onPress={() => loadRate(true)}
-          disabled={loading}
-        >
-          <Text style={styles.refreshBtnText}>
-            {loading ? "Refreshing…" : "Refresh rate"}
-          </Text>
-        </Pressable>
-
-        <Text style={styles.section}>JunubBTC fee schedule</Text>
-        <Text style={styles.helpText}>
-          Per-transaction service fee. JunubBTC never custodies your sats — the
-          fee is added to your Lightning invoice and routed by the bridge to
-          JunubBTC's bank account.
-        </Text>
-        {FEE_TIERS.map((t) => (
-          <View key={t.min} style={styles.feeRow}>
-            <Text style={styles.feeRange}>
-              {formatSats(t.min)} – {formatSats(t.max)} sats
-            </Text>
-            <Text style={styles.feeAmount}>{formatSats(t.fee)} sats</Text>
-          </View>
-        ))}
-        <Text style={styles.helpText}>
-          Min transfer: {SATS_MIN} sats · Max transfer:{" "}
-          {SATS_MAX.toLocaleString("en-US")} sats per transaction.
-        </Text>
-
         <Text style={styles.section}>Privacy</Text>
         <Text style={styles.helpText}>
           Sender and recipient names are never displayed. Every transaction uses
@@ -150,15 +120,6 @@ const styles = StyleSheet.create({
     maxWidth: "60%",
     textAlign: "right",
   },
-  feeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  feeRange: { color: colors.text, fontSize: 13 },
-  feeAmount: { color: colors.primary, fontSize: 13, fontWeight: "700" },
   helpText: {
     color: colors.muted,
     fontSize: 12,
@@ -166,13 +127,4 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     lineHeight: 18,
   },
-  refreshBtn: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.surfaceAlt,
-    borderRadius: (radius && radius.sm) || 8,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  refreshBtnText: { color: colors.primary, fontWeight: "700", fontSize: 12 },
 });

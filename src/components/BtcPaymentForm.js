@@ -18,14 +18,8 @@ import {
   formatSats,
   formatSsp,
   validateSspAmount,
-  SSP_MIN,
-  SSP_MAX,
 } from "../lib/conversion";
-import {
-  calculateFeeSats,
-  validateSatsForTransfer,
-  SATS_MAX,
-} from "../lib/fees";
+import { validateSatsForTransfer } from "../lib/fees";
 import { getSspPerBtc } from "../lib/rate";
 import { createPayout } from "../lib/bridge";
 import { openInExternalWallet } from "../lib/walletLink";
@@ -97,8 +91,6 @@ export default function BtcPaymentForm({
     if (!rate) return 0;
     return sspToSats(sspAmount, rate.sspPerBtc);
   }, [sspAmount, rate]);
-  const feeSats = useMemo(() => calculateFeeSats(sats), [sats]);
-  const totalSats = sats + feeSats;
 
   function validate() {
     for (const f of fields) {
@@ -161,11 +153,6 @@ export default function BtcPaymentForm({
         { label: "Sender ref", value: payout.senderToken },
         { label: "Recipient ref", value: payout.recipientToken },
         ...baseSummary,
-        { label: "You pay", value: `${formatSats(payout.sats)} sats` },
-        {
-          label: "JunubBTC fee",
-          value: `${formatSats(payout.feeSats)} sats`,
-        },
         {
           label: "Recipient gets",
           value: `${formatSats(payout.recipientSats)} sats`,
@@ -250,21 +237,8 @@ export default function BtcPaymentForm({
             <Text style={styles.hint}>
               ≈ {formatSats(sats)} sats at SSP {formatSsp(rate.sspPerBtc)} / BTC
             </Text>
-            <Text style={styles.hint}>
-              JunubBTC fee: {formatSats(feeSats)} sats
-            </Text>
-            <Text
-              style={[styles.hint, { fontWeight: "700", color: colors.text }]}
-            >
-              Total to pay: {formatSats(totalSats)} sats
-            </Text>
           </View>
         ) : null}
-
-        <Text style={styles.limitHint}>
-          Min SSP {SSP_MIN} · Max SSP {SSP_MAX.toLocaleString("en-US")} · max{" "}
-          {SATS_MAX.toLocaleString("en-US")} sats per transaction
-        </Text>
 
         <View style={{ height: spacing.lg }} />
 
@@ -355,12 +329,6 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: radius.sm || 8,
     backgroundColor: colors.surfaceAlt,
-  },
-  limitHint: {
-    color: colors.muted,
-    marginTop: spacing.xs || 6,
-    fontSize: 11,
-    fontStyle: "italic",
   },
   center: { alignItems: "center", justifyContent: "center" },
   statusText: { color: colors.muted, marginTop: spacing.sm },
