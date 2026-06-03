@@ -20,8 +20,6 @@ import ScanScreen from "./src/screens/ScanScreen";
 import PayMerchantScreen from "./src/screens/PayMerchantScreen";
 import ProcessingScreen from "./src/screens/ProcessingScreen";
 import SendMoneyScreen from "./src/screens/SendMoneyScreen";
-import PayBillScreen from "./src/screens/PayBillScreen";
-import BuyGoodsScreen from "./src/screens/BuyGoodsScreen";
 import HistoryScreen from "./src/screens/HistoryScreen";
 import ErrorBoundary from "./src/components/ErrorBoundary";
 
@@ -112,16 +110,6 @@ export default function App() {
             name="SendMoney"
             component={SendMoneyScreen}
             options={{ title: "Send Money" }}
-          />
-          <Stack.Screen
-            name="PayBill"
-            component={PayBillScreen}
-            options={{ title: "Pay Bill" }}
-          />
-          <Stack.Screen
-            name="BuyGoods"
-            component={BuyGoodsScreen}
-            options={{ title: "Buy Goods" }}
           />
         </Stack.Navigator>
       </NavigationContainer>

@@ -8,13 +8,7 @@ import {
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  ArrowUpRight,
-  Receipt,
-  Store,
-  QrCode,
-  CheckCircle2,
-} from "lucide-react-native";
+import { ArrowUpRight, QrCode, CheckCircle2 } from "lucide-react-native";
 import { colors, radius, spacing } from "../theme";
 import PrimaryButton from "../components/PrimaryButton";
 import { getWallet, listPayments } from "../lib/lnbits";
@@ -98,24 +92,10 @@ export default function HomeScreen({ navigation }) {
             onPress={() => navigation.navigate("SendMoney")}
           />
           <ActionTile
-            color="#F2A900"
-            Icon={Receipt}
-            title="Pay Bill"
-            subtitle="Paybill + account"
-            onPress={() => navigation.navigate("PayBill")}
-          />
-          <ActionTile
-            color="#5BC0EB"
-            Icon={Store}
-            title="Buy Goods"
-            subtitle="Till number"
-            onPress={() => navigation.navigate("BuyGoods")}
-          />
-          <ActionTile
             color="#B388FF"
             Icon={QrCode}
             title="Scan QR"
-            subtitle="Merchant code"
+            subtitle="Lightning address"
             onPress={() => navigation.navigate("Scan")}
           />
         </View>
